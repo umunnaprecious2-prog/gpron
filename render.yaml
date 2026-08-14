@@ -36,9 +36,9 @@ services:
   - type: web
     name: gpron-frontend
     env: static
-    plan: free
-    # Static sites are served from a global CDN, not a specific server
-    # region, so this field isn't valid here (unlike the backend above).
+    # Static sites don't take plan or region: they're served free from
+    # Render's global CDN, with no tiers or specific server region to pick
+    # (unlike the backend service above).
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
