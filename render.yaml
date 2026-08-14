@@ -9,8 +9,10 @@ services:
     plan: free
     region: oregon
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    preDeployCommand: alembic upgrade head
+    # preDeployCommand needs a paid plan; on the free tier, run migrations
+    # as part of startup instead. alembic upgrade head is a no-op once
+    # already at head, so this is safe to run on every restart/redeploy.
+    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
         sync: false # set to your real Neon connection string in the Render dashboard
@@ -35,7 +37,8 @@ services:
     name: gpron-frontend
     env: static
     plan: free
-    region: oregon
+    # Static sites are served from a global CDN, not a specific server
+    # region, so this field isn't valid here (unlike the backend above).
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
