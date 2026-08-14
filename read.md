@@ -7,7 +7,7 @@ version: 2.0.0
 ---
 
 current state:
-🔧 ARCHITECTURE MIGRATION IN PROGRESS (Mongo → Postgres, layered restructure, Docker, Render)
+✅ MIGRATION VERIFIED END-TO-END AGAINST A REAL HOSTED DATABASE (CockroachDB Serverless)
 - Backend rewritten from MongoDB/Motor to Postgres via SQLAlchemy 2.0 (async) + asyncpg + Alembic
 - `app/` restructured into a layered pattern: routes/ services/ middlewares/ utils/ validators/
   types/ exceptions/ scripts/ models/ (see architecture section below)
@@ -18,12 +18,18 @@ current state:
   plan or region field.
 - Hosted Postgres provider: originally targeting Neon, but Neon's domain was unreachable from the
   user's network across multiple connections/carriers (confirmed not a local issue via Neon's own
-  status page showing all-systems-operational). Switching to CockroachDB Serverless instead --
-  also genuinely free, Postgres wire-compatible, and doesn't pause on inactivity (Neon suspends
-  compute after idle, CockroachDB Serverless is usage-metered instead). app/database.py's SSL
-  detection is now host-based/provider-agnostic rather than hardcoded to neon.tech, so this isn't
-  a one-way door if the provider changes again.
-- Not yet verified end-to-end against a real hosted database (needs a working DATABASE_URL)
+  status page showing all-systems-operational). Switched to CockroachDB Serverless (Basic plan):
+  genuinely free (50M RUs + 10GiB/month, no card required), Postgres wire-compatible, and doesn't
+  need manual reactivation after inactivity the way Oracle/Supabase's free tiers do.
+- CockroachDB needed real fixes, not just a connection-string swap: SQLAlchemy's plain
+  `postgresql+asyncpg` dialect fails against it on two dialect-internals mismatches (see
+  requirements.txt's `sqlalchemy-cockroachdb` comment). Fixed by adding that dialect package and
+  using the `cockroachdb+asyncpg://` URL scheme for CockroachDB specifically. `app/database.py`
+  also patches out SQLAlchemy's automatic "json" (non-jsonb) codec setup, which CockroachDB has no
+  matching type for -- our schema only ever uses JSONB, so this is a safe no-op regardless of
+  provider. SSL detection stays host-based/provider-agnostic (not hardcoded to one host), so a
+  future provider switch is a URL change, not a re-migration.
+- Migration applied and the full test suite (7/7) passed against the real CockroachDB cluster.
 - No existing MongoDB data was migrated. Fresh schema, dummy/test accounts only (by design,
   confirmed with user)
 
@@ -73,6 +79,9 @@ completed tasks:
 - ✅ `render.yaml` Blueprint for backend (web service) + frontend (static site)
 - ✅ `.env.example` and `.env` updated to a generic Postgres connection string format
 - ✅ `app/database.py` SSL detection generalized to any non-local host, not hardcoded to Neon
+- ✅ Added `sqlalchemy-cockroachdb` dialect + `cockroachdb+asyncpg://` scheme support, and patched
+  out the "json" (non-jsonb) codec setup that CockroachDB has no matching type for
+- ✅ Migration applied and full test suite (7/7) verified against a real CockroachDB cluster
 
 ---
 
@@ -83,11 +92,9 @@ known pre-existing issue (not caused by this migration):
 ---
 
 tasks in progress:
-- Setting up CockroachDB Serverless (free tier, chosen after Neon proved unreachable from user's
-  network) and getting a working DATABASE_URL
-- End-to-end verification against that real hosted database
-- Render Blueprint deploy (render.yaml validated after two rounds of fixes; still needs a real
-  DATABASE_URL before the backend service will actually start)
+- Render Blueprint deploy: render.yaml validated after two rounds of fixes, and a working
+  DATABASE_URL now exists (CockroachDB, verified locally) -- next step is entering it in Render's
+  dashboard and completing the actual deploy
 
 ---
 
@@ -129,8 +136,9 @@ next steps:
    (or `pytest` locally, against a running Postgres)
 
 5. Deploy:
-   - Create a CockroachDB Serverless cluster, grab the connection string, adjust it to
-     `postgresql+asyncpg://...` (drop `sslmode`, SSL is handled in code), put it in Render's
+   - Create a CockroachDB Serverless (Basic plan) cluster, grab the connection string, adjust it
+     to `cockroachdb+asyncpg://...` (drop `sslmode`, SSL is handled in code -- note the scheme is
+     `cockroachdb+asyncpg`, not `postgresql+asyncpg`, see .env.example), put it in Render's
      gpron-backend DATABASE_URL env var (not committed anywhere)
    - Connect this repo to Render as a Blueprint (render.yaml)
    - Set ALLOWED_ORIGINS (backend) and VITE_API_URL (frontend) once both services have URLs,
