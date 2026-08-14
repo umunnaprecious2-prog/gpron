@@ -3,6 +3,13 @@ uvicorn[standard]>=0.32.0
 sqlalchemy[asyncio]>=2.0.30
 asyncpg>=0.29.0
 alembic>=1.13.0
+# Needed specifically for CockroachDB Serverless (see DATABASE_URL scheme
+# note in .env.example): SQLAlchemy's plain postgresql+asyncpg dialect
+# fails against CockroachDB on two dialect-internals mismatches (a "json"
+# type it doesn't have, and a non-Postgres server-version string). This
+# dialect patches around both. Not needed for Neon/Supabase/RDS/local
+# Postgres, which all use the plain postgresql+asyncpg scheme.
+sqlalchemy-cockroachdb>=2.0.4
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-dotenv==1.0.1

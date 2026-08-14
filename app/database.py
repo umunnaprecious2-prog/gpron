@@ -2,6 +2,7 @@ import sys
 from typing import AsyncGenerator
 from urllib.parse import urlsplit
 
+from sqlalchemy.dialects.postgresql.asyncpg import PGDialect_asyncpg
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -16,6 +17,22 @@ from app.config import settings
 
 class Base(DeclarativeBase):
     pass
+
+
+async def _skip_json_codec(self, conn) -> None:
+    """No-op replacement for SQLAlchemy's asyncpg dialect json codec setup.
+
+    On every new connection, SQLAlchemy tries to register asyncpg codecs for
+    both the "json" and "jsonb" Postgres types. CockroachDB has no distinct
+    "json" type (only "jsonb"), so that lookup fails with
+    ValueError: unknown type: pg_catalog.json on every connection attempt.
+    Our schema only ever uses JSONB columns (see app/models/db.py), never
+    plain JSON, so skipping this codec is safe regardless of which Postgres
+    provider is in use.
+    """
+
+
+PGDialect_asyncpg.setup_asyncpg_json_codec = _skip_json_codec
 
 
 # Hosts that run without TLS: local installs and the docker-compose
