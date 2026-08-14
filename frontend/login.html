@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - Gpron Services</title>
+  <link rel="stylesheet" href="/src/style.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body style="min-height:100vh;display:flex;flex-direction:column;">
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span>📧 hello@gpron.ng</span>
+    <span>📞 +234 800 GPRON 1</span>
+  </div>
+  <div class="topbar-right">
+    <a href="/register.html">Create Account &rarr;</a>
+  </div>
+</div>
+
+<nav class="navbar">
+  <a class="logo" href="/">
+    <div class="logo-icon">🧺</div>
+    <span>Gpron<span> Services</span></span>
+  </a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/track.html">Track Order</a>
+    <a href="/register.html" class="btn-nav">Register</a>
+  </div>
+</nav>
+
+<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 108px);">
+
+  <!-- Left panel -->
+  <div style="background:var(--gradient);padding:4rem;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;">
+    <div style="position:absolute;width:400px;height:400px;background:rgba(255,255,255,0.04);border-radius:50%;top:-100px;left:-100px;"></div>
+    <div style="position:absolute;width:300px;height:300px;background:rgba(255,255,255,0.04);border-radius:50%;bottom:-80px;right:-80px;"></div>
+    <div style="position:relative;z-index:1;color:#fff;">
+      <div style="font-size:3rem;margin-bottom:1.5rem;">🧺</div>
+      <h2 style="font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:700;line-height:1.2;margin-bottom:1rem;">
+        Welcome back to<br/>Gpron Services
+      </h2>
+      <p style="opacity:0.82;line-height:1.7;margin-bottom:2.5rem;font-size:0.98rem;">
+        Log in to place orders, track your garments, and manage your laundry all in one place.
+      </p>
+      <div style="display:flex;flex-direction:column;gap:1rem;">
+        <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.88rem;opacity:0.85;">
+          <div style="width:32px;height:32px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;">✓</div>
+          Real-time order tracking with unique GPRON IDs
+        </div>
+        <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.88rem;opacity:0.85;">
+          <div style="width:32px;height:32px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;">✓</div>
+          Normal & Express service at transparent prices
+        </div>
+        <div style="display:flex;align-items:center;gap:0.75rem;font-size:0.88rem;opacity:0.85;">
+          <div style="width:32px;height:32px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;">✓</div>
+          Your order history always available
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right panel -->
+  <div style="display:flex;align-items:center;justify-content:center;padding:3rem 2rem;background:var(--bg);">
+    <div style="width:100%;max-width:420px;">
+      <div style="margin-bottom:2rem;">
+        <h1 style="font-size:1.75rem;font-weight:800;color:var(--dark-emerald);margin-bottom:0.4rem;">Sign In</h1>
+        <p style="color:var(--text-sec);font-size:0.93rem;">Enter your credentials to access your account</p>
+      </div>
+
+      <div id="alert" class="alert alert-error alert-hidden">⚠ <span id="alert-msg"></span></div>
+
+      <form id="login-form">
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="email" placeholder="you@example.com" required autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="password" placeholder="Your password" required autocomplete="current-password" />
+        </div>
+        <button type="submit" class="btn btn-primary btn-block mt-2" id="submit-btn" style="padding:0.95rem;">
+          Sign In to My Account
+        </button>
+      </form>
+
+      <div style="margin:1.5rem 0;display:flex;align-items:center;gap:1rem;">
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+        <span style="color:var(--text-muted);font-size:0.85rem;">or</span>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+      </div>
+
+      <div id="google-signin-button" style="display:flex;justify-content:center;"></div>
+
+      <div class="divider"></div>
+      <p style="text-align:center;font-size:0.9rem;color:var(--text-sec);">
+        Don't have an account? <a href="/register.html" style="color:var(--soft-green);font-weight:700;">Create one free</a>
+      </p>
+      <p style="text-align:center;margin-top:0.5rem;font-size:0.85rem;color:var(--text-muted);">
+        Want to track without logging in? <a href="/track.html" style="color:var(--soft-green);">Track here</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { api, saveSession, getUser } from "/src/api.js";
+
+  const user = getUser();
+  if (user) window.location.href = user.role === "manager" ? "/manager.html" : "/dashboard.html";
+
+  // Standard login form
+  document.getElementById("login-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById("submit-btn");
+    const alertEl = document.getElementById("alert");
+    const alertMsg = document.getElementById("alert-msg");
+    alertEl.classList.add("alert-hidden");
+    btn.textContent = "Signing in...";
+    btn.disabled = true;
+
+    try {
+      const data = await api.login({
+        email: document.getElementById("email").value.trim(),
+        password: document.getElementById("password").value,
+      });
+      saveSession(data.access_token, data.user);
+      window.location.href = data.user.role === "manager" ? "/manager.html" : "/dashboard.html";
+    } catch (err) {
+      alertMsg.textContent = err.message;
+      alertEl.classList.remove("alert-hidden");
+      btn.textContent = "Sign In to My Account";
+      btn.disabled = false;
+    }
+  });
+
+  // Google Sign-In
+  window.onload = () => {
+    google.accounts.id.initialize({
+      client_id: "338827567972-cp96vhaba0m4j04dababsenpkd04fkvj.apps.googleusercontent.com",
+      callback: handleGoogleSignIn,
+    });
+
+    google.accounts.id.renderButton(
+      document.getElementById("google-signin-button"),
+      {
+        theme: "outline",
+        size: "large",
+        width: "100%",
+      }
+    );
+  };
+
+  async function handleGoogleSignIn(response) {
+    const alertEl = document.getElementById("alert");
+    const alertMsg = document.getElementById("alert-msg");
+    alertEl.classList.add("alert-hidden");
+
+    try {
+      const data = await api.googleLogin({
+        id_token: response.credential,
+        role: "customer",
+      });
+      saveSession(data.access_token, data.user);
+      window.location.href = data.user.role === "manager" ? "/manager.html" : "/dashboard.html";
+    } catch (err) {
+      alertMsg.textContent = err.message;
+      alertEl.classList.remove("alert-hidden");
+    }
+  }
+</script>
+
+<style>
+  @media (max-width: 768px) {
+    body > div[style*="grid"] { grid-template-columns: 1fr !important; }
+    body > div[style*="grid"] > div:first-child { display: none !important; }
+  }
+</style>
+
+</body>
+</html>

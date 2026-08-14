@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Dashboard - Gpron Services</title>
+  <link rel="stylesheet" href="/src/style.css" />
+  <style>
+    /* ── Catalog grid ── */
+    .catalog-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 0.75rem;
+    }
+    .catalog-item {
+      background: #fff;
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem 0.75rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      user-select: none;
+    }
+    .catalog-item:hover { border-color: var(--mint); box-shadow: var(--shadow-sm); transform: translateY(-2px); }
+    .catalog-item.selected { border-color: var(--soft-green); background: var(--sage); }
+    .catalog-item .item-emoji { font-size: 2rem; margin-bottom: 0.4rem; }
+    .catalog-item .item-name { font-size: 0.78rem; font-weight: 600; color: var(--text); line-height: 1.3; }
+    .catalog-item .item-price { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.2rem; }
+    .catalog-item .qty-badge {
+      position: absolute;
+      top: -8px; right: -8px;
+      width: 24px; height: 24px;
+      background: var(--gradient);
+      color: #fff;
+      border-radius: 50%;
+      font-size: 0.72rem;
+      font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      display: none;
+    }
+    .catalog-item.selected .qty-badge { display: flex; }
+
+    /* ── Cart ── */
+    .cart-item-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.65rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+    .cart-item-row .ci-emoji { font-size: 1.2rem; flex-shrink: 0; }
+    .cart-item-row .ci-name { flex: 1; font-weight: 600; color: var(--text); }
+    .cart-item-row .ci-price { color: var(--text-sec); font-size: 0.8rem; }
+    .qty-ctrl { display: flex; align-items: center; gap: 0.35rem; }
+    .qty-btn {
+      width: 26px; height: 26px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border);
+      background: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700;
+      color: var(--dark-emerald);
+      transition: all 0.15s;
+      line-height: 1;
+    }
+    .qty-btn:hover { background: var(--dark-emerald); color: #fff; border-color: var(--dark-emerald); }
+    .qty-num { font-weight: 700; font-size: 0.88rem; min-width: 18px; text-align: center; }
+    .ci-subtotal { font-weight: 700; color: var(--dark-emerald); min-width: 60px; text-align: right; font-size: 0.88rem; }
+
+    /* ── Order card ── */
+    .order-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.1rem 1.25rem;
+      margin-bottom: 0.85rem;
+      transition: box-shadow 0.2s;
+    }
+    .order-card:hover { box-shadow: var(--shadow-sm); }
+
+    /* ── Tab nav ── */
+    .tab-nav { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; border-bottom: 2px solid var(--border); padding-bottom: 0; }
+    .tab-btn {
+      padding: 0.6rem 1.1rem;
+      border: none;
+      background: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2.5px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s;
+    }
+    .tab-btn.active { color: var(--dark-emerald); border-bottom-color: var(--deep-green); }
+    .tab-btn:hover { color: var(--deep-green); }
+
+    /* ── Category pills ── */
+    .cat-pills { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .cat-pill {
+      padding: 0.35rem 0.9rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border: 1.5px solid var(--border);
+      background: #fff;
+      color: var(--text-sec);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .cat-pill:hover, .cat-pill.active { background: var(--dark-emerald); color: #fff; border-color: var(--dark-emerald); }
+
+    /* Filter buttons for orders */
+    .flt-btn { background: #fff; color: var(--text-sec); border: 1.5px solid var(--border); font-size: 0.78rem; padding: 0.35rem 0.85rem; border-radius: 999px; cursor: pointer; font-weight: 600; transition: all 0.15s; }
+    .flt-btn:hover { border-color: var(--soft-green); color: var(--deep-green); }
+    .flt-btn.active { background: var(--gradient); color: #fff; border-color: transparent; }
+
+    @media (max-width: 900px) {
+      .dash-two-col { grid-template-columns: 1fr !important; }
+    }
+    @media (max-width: 640px) {
+      .catalog-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <a class="logo" href="/">
+    <div class="logo-icon">🧺</div>
+    <span>Gpron<span> Services</span></span>
+  </a>
+  <div class="nav-links">
+    <a href="/track.html">Track Order</a>
+    <span id="user-name" style="color:var(--deep-green);font-weight:600;font-size:0.9rem;"></span>
+    <button onclick="doLogout()" class="btn btn-sm btn-outline" style="cursor:pointer;">Logout</button>
+  </div>
+</nav>
+
+<!-- Hero banner -->
+<div class="dash-topbar">
+  <div class="container">
+    <p style="font-size:0.75rem;opacity:0.65;letter-spacing:1px;text-transform:uppercase;margin-bottom:0.3rem;">Customer Dashboard</p>
+    <h2 id="welcome-msg">Welcome back!</h2>
+    <p style="opacity:0.8;margin-top:0.25rem;font-size:0.9rem;">Select your items, choose your service, and place your order below.</p>
+  </div>
+</div>
+
+<div class="dash-body container">
+
+  <!-- Stats -->
+  <div class="stat-row">
+    <div class="stat-card">
+      <div class="stat-icon">📦</div>
+      <div class="stat-label">Total Orders</div>
+      <div class="stat-value" id="s-total">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-label">In Progress</div>
+      <div class="stat-value" id="s-active">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">✅</div>
+      <div class="stat-label">Delivered</div>
+      <div class="stat-value" id="s-done">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">💰</div>
+      <div class="stat-label">Total Spent</div>
+      <div class="stat-value" id="s-spent">—</div>
+    </div>
+  </div>
+
+  <!-- Two-col layout -->
+  <div class="dash-two-col" style="display:grid;grid-template-columns:1.15fr 0.85fr;gap:1.5rem;align-items:start;">
+
+    <!-- LEFT: Place order -->
+    <div>
+      <div class="card" style="padding:1.5rem;">
+        <h3 style="font-size:1.05rem;font-weight:800;color:var(--dark-emerald);margin-bottom:0.2rem;">Place New Order</h3>
+        <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:1.25rem;">Pick your items and quantity, then choose your service type.</p>
+
+        <div id="order-alert" class="alert alert-hidden"></div>
+
+        <!-- Service type toggle -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-bottom:1.25rem;">
+          <label class="svc-toggle" id="svc-normal" onclick="setService('normal')" style="cursor:pointer;border:2px solid var(--border);border-radius:12px;padding:0.85rem 1rem;transition:all 0.2s;border-color:var(--soft-green);background:var(--sage);">
+            <p style="font-weight:700;font-size:0.9rem;color:var(--dark-emerald);">🕐 Normal</p>
+            <p style="font-size:0.75rem;color:var(--text-sec);margin-top:0.2rem;">₦500 base fee</p>
+            <p style="font-size:0.72rem;color:var(--text-muted);">3–5 day turnaround</p>
+          </label>
+          <label class="svc-toggle" id="svc-express" onclick="setService('express')" style="cursor:pointer;border:2px solid var(--border);border-radius:12px;padding:0.85rem 1rem;transition:all 0.2s;">
+            <p style="font-weight:700;font-size:0.9rem;color:var(--dark-emerald);">⚡ Express</p>
+            <p style="font-size:0.75rem;color:var(--text-sec);margin-top:0.2rem;">₦900 base fee</p>
+            <p style="font-size:0.72rem;color:var(--text-muted);">24 hour turnaround</p>
+          </label>
+        </div>
+
+        <!-- Category filter -->
+        <div class="cat-pills" id="cat-pills"></div>
+
+        <!-- Catalog -->
+        <div class="catalog-grid" id="catalog-grid"></div>
+
+        <!-- Notes -->
+        <div class="form-group" style="margin-top:1.1rem;margin-bottom:0;">
+          <label>Special Instructions <span style="font-weight:400;color:var(--text-muted);">(optional)</span></label>
+          <input type="text" id="notes-input" placeholder="e.g. Cold wash, Handle gently, No bleach..." />
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Cart + Orders -->
+    <div>
+
+      <!-- Cart -->
+      <div class="card" style="padding:1.5rem;margin-bottom:1.25rem;position:sticky;top:82px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+          <h3 style="font-size:1rem;font-weight:800;color:var(--dark-emerald);">🛒 Your Cart</h3>
+          <button onclick="clearCart()" id="clear-btn" style="font-size:0.75rem;color:var(--text-muted);background:none;border:none;cursor:pointer;display:none;">Clear all</button>
+        </div>
+
+        <!-- Empty cart -->
+        <div id="cart-empty" style="display:block;text-align:center;padding:1.5rem 0.5rem;">
+          <div style="font-size:2.5rem;margin-bottom:0.6rem;">🧺</div>
+          <p style="font-size:0.85rem;color:var(--text-muted);">No items selected yet.<br/>Pick items from the catalog.</p>
+        </div>
+
+        <!-- Cart items -->
+        <div id="cart-items" style="display:none;"></div>
+
+        <!-- Summary -->
+        <div id="cart-summary" style="display:none;">
+          <div style="padding-top:0.85rem;margin-top:0.25rem;">
+            <div style="display:flex;justify-content:space-between;font-size:0.82rem;color:var(--text-sec);margin-bottom:0.4rem;">
+              <span>Items subtotal</span><span id="sum-items">₦0</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:0.82rem;color:var(--text-sec);margin-bottom:0.75rem;">
+              <span id="sum-service-label">Service fee (Normal)</span><span id="sum-service">₦500</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-weight:800;font-size:1.05rem;color:var(--dark-emerald);padding-top:0.6rem;border-top:2px solid var(--border);">
+              <span>Total</span><span id="sum-total">₦0</span>
+            </div>
+          </div>
+          <button onclick="placeOrder()" id="place-btn" class="btn btn-primary btn-block" style="margin-top:1rem;padding:0.95rem;">
+            Place Order &rarr;
+          </button>
+          <p style="text-align:center;font-size:0.75rem;color:var(--text-muted);margin-top:0.6rem;">Payment collected on delivery</p>
+        </div>
+      </div>
+
+      <!-- My Orders -->
+      <div class="card" style="padding:1.5rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.5rem;">
+          <h3 style="font-size:1rem;font-weight:800;color:var(--dark-emerald);">My Orders</h3>
+          <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+            <button class="flt-btn active" data-f="" onclick="filterOrders(this,'')">All</button>
+            <button class="flt-btn" data-f="pending" onclick="filterOrders(this,'pending')">Pending</button>
+            <button class="flt-btn" data-f="in_cleaning" onclick="filterOrders(this,'in_cleaning')">Cleaning</button>
+            <button class="flt-btn" data-f="delivered" onclick="filterOrders(this,'delivered')">Delivered</button>
+          </div>
+        </div>
+        <div id="orders-loading" class="text-muted" style="text-align:center;padding:1rem;">Loading...</div>
+        <div id="orders-empty" style="display:none;text-align:center;padding:2rem 0.5rem;">
+          <div style="font-size:2rem;margin-bottom:0.5rem;">📭</div>
+          <p style="font-size:0.85rem;color:var(--text-muted);">No orders yet. Start ordering!</p>
+        </div>
+        <div id="orders-list"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div style="background:var(--dark-emerald);color:rgba(255,255,255,0.45);text-align:center;padding:1.25rem;font-size:0.82rem;margin-top:3rem;">
+  &copy; 2026 Gpron Integrated Services &nbsp;|&nbsp; <a href="/" style="color:var(--mint);">Homepage</a>
+</div>
+
+<script type="module">
+import { api, getUser, logout, requireAuth, normaliseOrder } from "/src/api.js";
+
+const user = requireAuth("customer");
+if (!user) throw new Error("redirect");
+
+document.getElementById("user-name").textContent = user.name;
+document.getElementById("welcome-msg").textContent = `Welcome back, ${user.name.split(" ")[0]}!`;
+window.doLogout = logout;
+
+/* ── Catalog data ── */
+const CATALOG = [
+  { id: "shirt",       name: "Shirt / Top",      emoji: "👔", price: 150, cat: "Tops" },
+  { id: "trouser",     name: "Trouser / Jeans",  emoji: "👖", price: 150, cat: "Bottoms" },
+  { id: "dress",       name: "Dress",             emoji: "👗", price: 150, cat: "Tops" },
+  { id: "suit_jacket", name: "Suit Jacket",       emoji: "🧥", price: 200, cat: "Formal" },
+  { id: "suit_trouser",name: "Suit Trouser",      emoji: "👔", price: 200, cat: "Formal" },
+  { id: "coat",        name: "Coat / Jacket",     emoji: "🧥", price: 250, cat: "Outerwear" },
+  { id: "traditional", name: "Traditional Wear",  emoji: "🥻", price: 200, cat: "Traditional" },
+  { id: "ankara",      name: "Ankara / Aso-Oke",  emoji: "🧣", price: 250, cat: "Traditional" },
+  { id: "wedding",     name: "Wedding Dress",      emoji: "👰", price: 500, cat: "Specialty" },
+  { id: "kids",        name: "Kids Wear",          emoji: "👶", price: 100, cat: "Kids" },
+  { id: "underwear",   name: "Underwear / Socks",  emoji: "🧦", price: 60,  cat: "Basics" },
+  { id: "sweater",     name: "Sweater / Hoodie",   emoji: "🧶", price: 180, cat: "Outerwear" },
+  { id: "uniform",     name: "Uniform (set)",      emoji: "👕", price: 180, cat: "Formal" },
+  { id: "bedsheet",    name: "Bedsheet",           emoji: "🛏️", price: 200, cat: "Bedding" },
+  { id: "duvet",       name: "Duvet / Comforter",  emoji: "🛋️", price: 400, cat: "Bedding" },
+  { id: "pillowcase",  name: "Pillowcase",         emoji: "🪫", price: 80,  cat: "Bedding" },
+  { id: "curtain",     name: "Curtain (per panel)",emoji: "🪟", price: 300, cat: "Home" },
+];
+
+const CATEGORIES = ["All", ...new Set(CATALOG.map(i => i.cat))];
+const EXPRESS_MULT = 1.6;
+const BASE_FEE = { normal: 500, express: 900 };
+
+let serviceType = "normal";
+let cart = {};      // { id: quantity }
+let allOrders = [];
+let currentFilter = "";
+
+/* ── Service type toggle ── */
+window.setService = function(type) {
+  serviceType = type;
+  document.getElementById("svc-normal").style.borderColor  = type === "normal"  ? "var(--soft-green)" : "var(--border)";
+  document.getElementById("svc-normal").style.background   = type === "normal"  ? "var(--sage)" : "#fff";
+  document.getElementById("svc-express").style.borderColor = type === "express" ? "var(--soft-green)" : "var(--border)";
+  document.getElementById("svc-express").style.background  = type === "express" ? "var(--sage)" : "#fff";
+  renderCart();
+};
+
+/* ── Category pills ── */
+let activecat = "All";
+const pillsEl = document.getElementById("cat-pills");
+CATEGORIES.forEach(cat => {
+  const btn = document.createElement("button");
+  btn.className = "cat-pill" + (cat === "All" ? " active" : "");
+  btn.textContent = cat;
+  btn.onclick = () => {
+    activecat = cat;
+    pillsEl.querySelectorAll(".cat-pill").forEach(b => b.classList.toggle("active", b.textContent === cat));
+    renderCatalog();
+  };
+  pillsEl.appendChild(btn);
+});
+
+/* ── Render catalog ── */
+function renderCatalog() {
+  const grid = document.getElementById("catalog-grid");
+  const items = activecat === "All" ? CATALOG : CATALOG.filter(i => i.cat === activecat);
+  grid.innerHTML = items.map(item => {
+    const qty = cart[item.id] || 0;
+    const unitPrice = serviceType === "express"
+      ? Math.round(item.price * EXPRESS_MULT)
+      : item.price;
+    return `
+      <div class="catalog-item ${qty > 0 ? "selected" : ""}" onclick="toggleItem('${item.id}')">
+        <div class="qty-badge" id="badge-${item.id}">${qty}</div>
+        <div class="item-emoji">${item.emoji}</div>
+        <div class="item-name">${item.name}</div>
+        <div class="item-price">₦${unitPrice.toLocaleString()}/item</div>
+      </div>`;
+  }).join("");
+}
+
+/* ── Toggle item from catalog ── */
+window.toggleItem = function(id) {
+  cart[id] = (cart[id] || 0) + 1;
+  renderCatalog();
+  renderCart();
+};
+
+/* ── Cart qty controls ── */
+window.changeQty = function(id, delta) {
+  cart[id] = (cart[id] || 0) + delta;
+  if (cart[id] <= 0) delete cart[id];
+  renderCatalog();
+  renderCart();
+};
+
+window.clearCart = function() {
+  cart = {};
+  renderCatalog();
+  renderCart();
+};
+
+/* ── Render cart ── */
+function renderCart() {
+  const emptyEl   = document.getElementById("cart-empty");
+  const itemsEl   = document.getElementById("cart-items");
+  const summaryEl = document.getElementById("cart-summary");
+  const clearBtn  = document.getElementById("clear-btn");
+
+  const ids = Object.keys(cart);
+  if (!ids.length) {
+    emptyEl.style.display = "block";
+    itemsEl.style.display = "none";
+    summaryEl.style.display = "none";
+    clearBtn.style.display = "none";
+    return;
+  }
+
+  emptyEl.style.display = "none";
+  itemsEl.style.display = "block";
+  summaryEl.style.display = "block";
+  clearBtn.style.display = "inline-block";
+
+  const mult = serviceType === "express" ? EXPRESS_MULT : 1;
+
+  let itemsTotal = 0;
+  itemsEl.innerHTML = ids.map(id => {
+    const item = CATALOG.find(c => c.id === id);
+    if (!item) return "";
+    const unitPrice = Math.round(item.price * mult);
+    const subtotal  = unitPrice * cart[id];
+    itemsTotal += subtotal;
+    return `
+      <div class="cart-item-row">
+        <span class="ci-emoji">${item.emoji}</span>
+        <span class="ci-name">${item.name}</span>
+        <div class="qty-ctrl">
+          <button class="qty-btn" onclick="changeQty('${id}',-1)">−</button>
+          <span class="qty-num">${cart[id]}</span>
+          <button class="qty-btn" onclick="changeQty('${id}',1)">+</button>
+        </div>
+        <span class="ci-subtotal">₦${subtotal.toLocaleString()}</span>
+      </div>`;
+  }).join("");
+
+  const baseFee = BASE_FEE[serviceType];
+  const total   = baseFee + itemsTotal;
+
+  document.getElementById("sum-items").textContent    = `₦${itemsTotal.toLocaleString()}`;
+  document.getElementById("sum-service-label").textContent = `Base fee (${serviceType === "express" ? "Express ⚡" : "Normal 🕐"})`;
+  document.getElementById("sum-service").textContent  = `₦${baseFee.toLocaleString()}`;
+  document.getElementById("sum-total").textContent    = `₦${total.toLocaleString()}`;
+}
+
+/* ── Place order ── */
+window.placeOrder = async function() {
+  const alertEl = document.getElementById("order-alert");
+  const btn     = document.getElementById("place-btn");
+  alertEl.className = "alert alert-hidden";
+
+  const ids = Object.keys(cart);
+  if (!ids.length) {
+    alertEl.className = "alert alert-error";
+    alertEl.textContent = "⚠ Your cart is empty. Select at least one item.";
+    return;
+  }
+
+  const mult = serviceType === "express" ? EXPRESS_MULT : 1;
+  const cartPayload = ids.map(id => {
+    const item = CATALOG.find(c => c.id === id);
+    return { name: item.name, quantity: cart[id], unit_price: Math.round(item.price * mult) };
+  });
+
+  const orderPayload = {
+    service_type: serviceType,
+    cart: cartPayload,
+    notes: document.getElementById("notes-input").value.trim() || null,
+  };
+  console.log("Placing order:", orderPayload);
+
+  btn.textContent = "Placing order...";
+  btn.disabled = true;
+
+  try {
+    const order = await api.createOrder(orderPayload);
+    console.log("Order created successfully:", order);
+    alertEl.className = "alert alert-success";
+    alertEl.innerHTML = `✓ Order placed! Tracking ID: <strong>${order.tracking_id}</strong> — <a href="/track.html?id=${order.tracking_id}" style="color:var(--deep-green);font-weight:700;">Track now</a>`;
+    cart = {};
+    document.getElementById("notes-input").value = "";
+    renderCatalog();
+    renderCart();
+    await loadOrders();
+  } catch (err) {
+    console.error("Order creation failed:", err);
+    alertEl.className = "alert alert-error";
+    alertEl.textContent = `⚠ ${err.message}`;
+  }
+
+  btn.textContent = "Place Order →";
+  btn.disabled = false;
+};
+
+/* ── Orders list ── */
+function badge(status) {
+  return `<span class="badge badge-${status}">${status.replace("_"," ")}</span>`;
+}
+
+function renderOrders(orders) {
+  const loading = document.getElementById("orders-loading");
+  const empty   = document.getElementById("orders-empty");
+  const list    = document.getElementById("orders-list");
+  loading.style.display = "none";
+
+  const filtered = currentFilter ? orders.filter(o => o.status === currentFilter) : orders;
+  if (!filtered.length) { empty.style.display = ""; list.innerHTML = ""; return; }
+  empty.style.display = "none";
+
+  list.innerHTML = filtered.map(o => {
+    const cartSummary = (o.cart && o.cart.length)
+      ? o.cart.map(c => `${c.name} × ${c.quantity}`).join(" · ")
+      : (o.items && o.items.length ? o.items.slice(0,4).join(", ") : "—");
+    return `
+    <div class="order-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.6rem;">
+        <div>
+          <p style="font-weight:800;font-size:0.95rem;color:var(--dark-emerald);">${o.tracking_id}</p>
+          <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.1rem;">${new Date(o.created_at).toLocaleDateString("en-NG",{day:"numeric",month:"short",year:"numeric"})}</p>
+        </div>
+        ${badge(o.status)}
+      </div>
+      <div style="font-size:0.8rem;color:var(--text-sec);margin-bottom:0.65rem;">${cartSummary}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-weight:800;color:var(--dark-emerald);">₦${o.price.toLocaleString()}</span>
+        <a href="/track.html?id=${o.tracking_id}" class="btn btn-sm btn-outline" style="color:var(--soft-green);border-color:var(--soft-green);font-size:0.75rem;">Track →</a>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+window.filterOrders = function(btn, f) {
+  currentFilter = f;
+  document.querySelectorAll(".flt-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  renderOrders(allOrders);
+};
+
+function updateStats(orders) {
+  document.getElementById("s-total").textContent = orders.length;
+  document.getElementById("s-active").textContent = orders.filter(o => o.status !== "delivered").length;
+  document.getElementById("s-done").textContent   = orders.filter(o => o.status === "delivered").length;
+  const spent = orders.reduce((s, o) => s + o.price, 0);
+  document.getElementById("s-spent").textContent  = `₦${spent.toLocaleString()}`;
+}
+
+async function loadOrders() {
+  try {
+    const raw = await api.myOrders();
+    console.log("Customer orders loaded:", raw.length, raw);
+    allOrders = raw.map(normaliseOrder);
+    updateStats(allOrders);
+    renderOrders(allOrders);
+  } catch (e) {
+    console.error("Failed to load orders:", e);
+    document.getElementById("orders-loading").textContent = "Failed to load orders. " + (e.message || "");
+  }
+}
+
+/* ── Init ── */
+renderCatalog();
+renderCart();
+loadOrders();
+</script>
+
+</body>
+</html>

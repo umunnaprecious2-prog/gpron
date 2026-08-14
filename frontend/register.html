@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register - Gpron Services</title>
+  <link rel="stylesheet" href="/src/style.css" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body style="min-height:100vh;display:flex;flex-direction:column;">
+
+<div class="topbar">
+  <div class="topbar-left">
+    <span>📧 hello@gpron.ng</span>
+    <span>📞 +234 800 GPRON 1</span>
+  </div>
+  <div class="topbar-right">
+    <a href="/login.html">Already a member? Sign in &rarr;</a>
+  </div>
+</div>
+
+<nav class="navbar">
+  <a class="logo" href="/">
+    <div class="logo-icon">🧺</div>
+    <span>Gpron<span> Services</span></span>
+  </a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/track.html">Track Order</a>
+    <a href="/login.html" class="btn-nav">Login</a>
+  </div>
+</nav>
+
+<div style="flex:1;display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 108px);">
+
+  <!-- Left panel -->
+  <div style="background:var(--gradient);padding:4rem;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden;">
+    <div style="position:absolute;width:450px;height:450px;background:rgba(255,255,255,0.04);border-radius:50%;top:-150px;right:-150px;"></div>
+    <div style="position:relative;z-index:1;color:#fff;">
+      <div style="font-size:3rem;margin-bottom:1.5rem;">✨</div>
+      <h2 style="font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:700;line-height:1.2;margin-bottom:1rem;">
+        Start Your Laundry<br/>Journey Today
+      </h2>
+      <p style="opacity:0.82;line-height:1.7;margin-bottom:2.5rem;font-size:0.98rem;">
+        Join thousands of customers who trust Gpron for clean, fresh, professionally handled clothes every time.
+      </p>
+
+      <!-- Pricing preview -->
+      <div style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:14px;padding:1.5rem;backdrop-filter:blur(8px);">
+        <p style="font-size:0.78rem;text-transform:uppercase;letter-spacing:1px;opacity:0.7;margin-bottom:1rem;">Starting from</p>
+        <div style="display:flex;gap:1.5rem;">
+          <div>
+            <p style="font-size:1.6rem;font-weight:900;color:var(--mint);">₦500</p>
+            <p style="font-size:0.8rem;opacity:0.75;">Normal Service</p>
+          </div>
+          <div style="width:1px;background:rgba(255,255,255,0.15);"></div>
+          <div>
+            <p style="font-size:1.6rem;font-weight:900;color:var(--mint);">₦900</p>
+            <p style="font-size:0.8rem;opacity:0.75;">Express Service</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right panel -->
+  <div style="display:flex;align-items:center;justify-content:center;padding:3rem 2rem;background:var(--bg);">
+    <div style="width:100%;max-width:420px;">
+      <div style="margin-bottom:2rem;">
+        <h1 style="font-size:1.75rem;font-weight:800;color:var(--dark-emerald);margin-bottom:0.4rem;">Create Your Account</h1>
+        <p style="color:var(--text-sec);font-size:0.93rem;">Free to join. Start placing orders in minutes.</p>
+      </div>
+
+      <div id="alert" class="alert alert-error alert-hidden">⚠ <span id="alert-msg"></span></div>
+
+      <form id="reg-form">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="name" placeholder="e.g. Amara Okonkwo" required minlength="2" autocomplete="name" />
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="email" placeholder="you@example.com" required autocomplete="email" />
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <input type="password" id="password" placeholder="Minimum 6 characters" required minlength="6" autocomplete="new-password" />
+          <p class="form-hint">Use at least 6 characters including letters and numbers</p>
+        </div>
+        <div class="form-group">
+          <label>Account Type</label>
+          <select id="role">
+            <option value="customer">Customer – Place and track orders</option>
+            <option value="manager">Manager – Full operational access</option>
+          </select>
+        </div>
+        <div class="form-group" id="manager-code-group" style="display:none;">
+          <label>Manager Code</label>
+          <input type="password" id="manager-code" placeholder="Enter manager code" />
+          <p class="form-hint">Required to create a manager account</p>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block mt-2" id="submit-btn" style="padding:0.95rem;">
+          Create My Account
+        </button>
+      </form>
+
+      <div style="margin:1.5rem 0;display:flex;align-items:center;gap:1rem;">
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+        <span style="color:var(--text-muted);font-size:0.85rem;">or</span>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+      </div>
+
+      <div id="google-signin-button" style="display:flex;justify-content:center;"></div>
+
+      <div class="divider"></div>
+      <p style="text-align:center;font-size:0.9rem;color:var(--text-sec);">
+        Already have an account? <a href="/login.html" style="color:var(--soft-green);font-weight:700;">Sign in here</a>
+      </p>
+      <p style="text-align:center;margin-top:0.75rem;font-size:0.78rem;color:var(--text-muted);line-height:1.5;">
+        By creating an account you agree to our privacy policy and terms of service.
+      </p>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { api, saveSession, getUser } from "/src/api.js";
+
+  const user = getUser();
+  if (user) window.location.href = user.role === "manager" ? "/manager.html" : "/dashboard.html";
+
+  const roleSelect = document.getElementById("role");
+  const managerCodeGroup = document.getElementById("manager-code-group");
+  
+  // Show/hide manager code field based on role selection
+  roleSelect.addEventListener("change", (e) => {
+    if (e.target.value === "manager") {
+      managerCodeGroup.style.display = "block";
+    } else {
+      managerCodeGroup.style.display = "none";
+    }
+  });
+
+  document.getElementById("reg-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById("submit-btn");
+    const alertEl = document.getElementById("alert");
+    const alertMsg = document.getElementById("alert-msg");
+    alertEl.classList.add("alert-hidden");
+    btn.textContent = "Creating account...";
+    btn.disabled = true;
+
+    try {
+      const role = document.getElementById("role").value;
+      const payload = {
+        name: document.getElementById("name").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        password: document.getElementById("password").value,
+        role: role,
+      };
+      
+      // Include manager code if role is manager
+      if (role === "manager") {
+        payload.manager_code = document.getElementById("manager-code").value;
+      }
+
+      const data = await api.register(payload);
+      saveSession(data.access_token, data.user);
+      window.location.href = data.user.role === "manager" ? "/manager.html" : "/dashboard.html";
+    } catch (err) {
+      alertMsg.textContent = err.message;
+      alertEl.classList.remove("alert-hidden");
+      btn.textContent = "Create My Account";
+      btn.disabled = false;
+    }
+  });
+
+  // Google Sign-In
+  window.onload = () => {
+    google.accounts.id.initialize({
+      client_id: "338827567972-cp96vhaba0m4j04dababsenpkd04fkvj.apps.googleusercontent.com",
+      callback: handleGoogleSignUp,
+    });
+
+    google.accounts.id.renderButton(
+      document.getElementById("google-signin-button"),
+      {
+        theme: "outline",
+        size: "large",
+        width: "100%",
+      }
+    );
+  };
+
+  async function handleGoogleSignUp(response) {
+    const alertEl = document.getElementById("alert");
+    const alertMsg = document.getElementById("alert-msg");
+    alertEl.classList.add("alert-hidden");
+
+    try {
+      const role = document.getElementById("role").value;
+      const payload = {
+        id_token: response.credential,
+        role: role,
+      };
+
+      // Include manager code if role is manager
+      if (role === "manager") {
+        payload.manager_code = document.getElementById("manager-code").value;
+        if (!payload.manager_code) {
+          throw new Error("Manager code required");
+        }
+      }
+
+      const data = await api.googleLogin(payload);
+      saveSession(data.access_token, data.user);
+      window.location.href = data.user.role === "manager" ? "/manager.html" : "/dashboard.html";
+    } catch (err) {
+      alertMsg.textContent = err.message;
+      alertEl.classList.remove("alert-hidden");
+    }
+  }
+</script>
+
+<style>
+  @media (max-width: 768px) {
+    body > div[style*="grid"] { grid-template-columns: 1fr !important; }
+    body > div[style*="grid"] > div:first-child { display: none !important; }
+  }
+</style>
+
+</body>
+</html>

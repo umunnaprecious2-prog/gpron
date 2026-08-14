@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Track Your Order - Gpron Services</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <span>📧 hello@gpron.ng</span>
+    <span>📞 +234 800 GPRON 1</span>
+  </div>
+  <div class="topbar-right">
+    <a href="/register.html">Place a New Order &rarr;</a>
+  </div>
+</div>
+
+<nav class="navbar">
+  <a class="logo" href="/">
+    <div class="logo-icon">🧺</div>
+    <span>Gpron<span> Services</span></span>
+  </a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/#pricing">Pricing</a>
+    <a href="/login.html">Login</a>
+    <a href="/register.html" class="btn-nav">Place Order</a>
+  </div>
+</nav>
+
+<!-- Search hero -->
+<section style="background:var(--gradient);padding:5rem 2rem 4rem;text-align:center;color:#fff;position:relative;overflow:hidden;">
+  <div style="position:absolute;width:500px;height:500px;background:rgba(255,255,255,0.03);border-radius:50%;top:-200px;left:-100px;"></div>
+  <div style="position:absolute;width:400px;height:400px;background:rgba(255,255,255,0.03);border-radius:50%;bottom:-150px;right:-100px;"></div>
+  <div style="position:relative;z-index:1;">
+    <div style="display:inline-flex;align-items:center;gap:0.5rem;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);padding:0.4rem 1rem;border-radius:999px;font-size:0.82rem;margin-bottom:1.25rem;">
+      📦 Real-time Order Tracking
+    </div>
+    <h1 style="font-family:'Playfair Display',serif;font-size:clamp(1.9rem,4vw,3rem);font-weight:700;margin-bottom:0.75rem;">Track Your Laundry Order</h1>
+    <p style="opacity:0.85;margin-bottom:2rem;font-size:1rem;max-width:480px;margin-left:auto;margin-right:auto;">Enter your unique GPRON tracking ID to see real-time status and progress updates.</p>
+    <div style="max-width:520px;margin:0 auto;display:flex;gap:0.75rem;">
+      <input id="track-input" type="text" placeholder="e.g. GPRON-2026-0001"
+        style="flex:1;padding:1rem 1.25rem;border-radius:12px;border:2px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.12);color:#fff;font-size:1rem;outline:none;text-transform:uppercase;backdrop-filter:blur(8px);"
+        onfocus="this.style.borderColor='rgba(255,255,255,0.7)'"
+        onblur="this.style.borderColor='rgba(255,255,255,0.3)'" />
+      <button onclick="doTrack()" class="btn btn-white" style="padding:1rem 1.75rem;white-space:nowrap;">Track Order</button>
+    </div>
+    <p id="track-error" style="margin-top:0.8rem;color:#fca5a5;font-size:0.88rem;display:none;"></p>
+  </div>
+</section>
+
+<!-- Result area -->
+<div class="container" style="padding-top:3rem;padding-bottom:4rem;">
+
+  <!-- Placeholder state -->
+  <div id="placeholder-state" style="text-align:center;padding:4rem 1rem;max-width:480px;margin:0 auto;">
+    <div style="width:80px;height:80px;background:var(--sage);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 1.5rem;">📦</div>
+    <h3 style="font-weight:700;margin-bottom:0.6rem;color:var(--dark-emerald);">Enter Your Tracking ID</h3>
+    <p style="color:var(--text-muted);font-size:0.9rem;line-height:1.7;">Your tracking ID was sent when you placed your order. It looks like <strong>GPRON-2026-0001</strong>.</p>
+  </div>
+
+  <!-- Not found state -->
+  <div id="not-found-state" style="display:none;text-align:center;padding:4rem 1rem;max-width:480px;margin:0 auto;">
+    <div style="width:80px;height:80px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 1.5rem;">🔍</div>
+    <h3 style="font-weight:700;margin-bottom:0.6rem;color:#b91c1c;">Order Not Found</h3>
+    <p style="color:var(--text-muted);font-size:0.9rem;line-height:1.7;">We could not find an order with that tracking ID. Please double-check and try again, or <a href="/login.html" style="color:var(--soft-green);">log in</a> to view your orders.</p>
+  </div>
+
+  <!-- Result state -->
+  <div id="result-state" style="display:none;max-width:780px;margin:0 auto;">
+
+    <!-- Summary card -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem;">
+        <div>
+          <p style="font-size:0.75rem;color:var(--text-muted);font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:0.3rem;">Tracking ID</p>
+          <p id="res-id" style="font-size:1.6rem;font-weight:900;color:var(--dark-emerald);letter-spacing:1px;"></p>
+        </div>
+        <div id="res-badge"></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;padding-top:1.25rem;border-top:1px solid var(--border);">
+        <div>
+          <p style="font-size:0.75rem;color:var(--text-muted);font-weight:500;margin-bottom:0.25rem;">Service Type</p>
+          <p id="res-service" style="font-weight:700;text-transform:capitalize;color:var(--text);"></p>
+        </div>
+        <div>
+          <p style="font-size:0.75rem;color:var(--text-muted);font-weight:500;margin-bottom:0.25rem;">Total Price</p>
+          <p id="res-price" style="font-weight:700;color:var(--dark-emerald);font-size:1.1rem;"></p>
+        </div>
+        <div>
+          <p style="font-size:0.75rem;color:var(--text-muted);font-weight:500;margin-bottom:0.25rem;">Items</p>
+          <p id="res-items" style="font-weight:600;font-size:0.9rem;color:var(--text);"></p>
+        </div>
+        <div>
+          <p style="font-size:0.75rem;color:var(--text-muted);font-weight:500;margin-bottom:0.25rem;">Order Date</p>
+          <p id="res-date" style="font-weight:600;font-size:0.9rem;"></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress card -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.5rem;">
+        <h3 style="font-weight:700;font-size:1.1rem;color:var(--dark-emerald);">Order Progress</h3>
+        <span id="res-label" style="font-size:0.85rem;color:var(--text-sec);font-style:italic;"></span>
+      </div>
+      <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:2rem;" id="res-updated"></p>
+
+      <!-- Step progress -->
+      <div style="position:relative;margin-bottom:2.5rem;">
+        <div class="progress-track" id="progress-track"></div>
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+
+      <!-- Items list -->
+      <div style="padding-top:1.25rem;border-top:1px solid var(--border);">
+        <p style="font-size:0.82rem;font-weight:600;color:var(--text-sec);margin-bottom:0.75rem;text-transform:uppercase;letter-spacing:0.5px;">Items in this order</p>
+        <div id="items-list" style="display:flex;flex-wrap:wrap;gap:0.5rem;"></div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div style="margin-top:1.5rem;display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;">
+      <a href="/register.html" class="btn btn-primary">Place Another Order</a>
+      <a href="/" class="btn btn-outline">Back to Homepage</a>
+    </div>
+  </div>
+</div>
+
+<!-- How tracking works strip -->
+<section class="section-sm section-tinted">
+  <div class="container">
+    <div class="section-header" style="margin-bottom:2rem;">
+      <div class="section-tag">Order Lifecycle</div>
+      <h2 class="section-title" style="font-size:1.5rem;">How We Process Your Order</h2>
+    </div>
+    <div class="steps-row" style="max-width:900px;margin:0 auto;">
+      <div class="step-card">
+        <div class="step-num" style="width:48px;height:48px;font-size:1rem;">1</div>
+        <h3>Pending</h3>
+        <p>Order received, awaiting pickup from your location.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num" style="width:48px;height:48px;font-size:1rem;">2</div>
+        <h3>Picked Up</h3>
+        <p>Our team has collected your garments.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num" style="width:48px;height:48px;font-size:1rem;">3</div>
+        <h3>In Cleaning</h3>
+        <p>Your items are being professionally cleaned.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num" style="width:48px;height:48px;font-size:1rem;">4</div>
+        <h3>Ready</h3>
+        <p>Cleaned and packaged, ready for delivery.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num" style="width:48px;height:48px;font-size:1rem;">5</div>
+        <h3>Delivered</h3>
+        <p>Your fresh clothes have been delivered.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer strip -->
+<div style="background:#071f17;color:rgba(255,255,255,0.45);text-align:center;padding:1.5rem;font-size:0.82rem;">
+  &copy; 2026 Gpron Integrated Services &nbsp;|&nbsp;
+  <a href="/" style="color:var(--mint);">Home</a> &nbsp;|&nbsp;
+  <a href="/#faq" style="color:var(--mint);">FAQ</a> &nbsp;|&nbsp;
+  <a href="/register.html" style="color:var(--mint);">Place Order</a>
+</div>
+
+<script type="module">
+  import { api } from "/src/api.js";
+
+  const STATUS_ORDER = ["pending", "picked_up", "in_cleaning", "ready", "delivered"];
+  const STATUS_LABELS = {
+    pending:     "Order received and awaiting pickup",
+    picked_up:   "Order picked up by our team",
+    in_cleaning: "Your items are being cleaned",
+    ready:       "Your order is ready for delivery",
+    delivered:   "Order delivered successfully",
+  };
+
+  /* Pre-fill from URL */
+  const params = new URLSearchParams(window.location.search);
+  const preId = params.get("id");
+  if (preId) {
+    document.getElementById("track-input").value = preId.toUpperCase();
+    doTrack();
+  }
+
+  window.doTrack = async function() {
+    const val = document.getElementById("track-input").value.trim().toUpperCase();
+    const err = document.getElementById("track-error");
+    err.style.display = "none";
+
+    if (!val) { err.textContent = "Please enter a tracking ID."; err.style.display = "block"; return; }
+
+    hide("placeholder-state"); hide("not-found-state"); hide("result-state");
+
+    try {
+      const data = await api.track(val);
+      renderResult(data);
+      show("result-state");
+    } catch {
+      show("not-found-state");
+    }
+  };
+
+  document.getElementById("track-input").addEventListener("keydown", e => {
+    if (e.key === "Enter") window.doTrack();
+  });
+
+  function badge(status) {
+    return `<span class="badge badge-${status}" style="font-size:0.88rem;padding:0.4rem 1.1rem;">${status.replace("_", " ")}</span>`;
+  }
+
+  function renderResult(data) {
+    document.getElementById("res-id").textContent = data.tracking_id;
+    document.getElementById("res-badge").innerHTML = badge(data.status);
+    document.getElementById("res-service").textContent = data.service_type;
+    document.getElementById("res-price").textContent = `₦${data.price.toLocaleString()}`;
+    document.getElementById("res-items").textContent = data.items.join(", ");
+    document.getElementById("res-date").textContent = new Date(data.created_at).toLocaleDateString("en-NG", { day: "numeric", month: "long", year: "numeric" });
+    document.getElementById("res-label").textContent = STATUS_LABELS[data.status] || data.status;
+    document.getElementById("res-updated").textContent = `Last updated: ${new Date(data.updated_at).toLocaleString("en-NG")}`;
+
+    /* Progress steps */
+    const currentIdx = STATUS_ORDER.indexOf(data.status);
+    const track = document.getElementById("progress-track");
+    track.innerHTML = data.steps.map((step, i) => `
+      <div class="step-item ${step.completed ? "completed" : ""} ${i === currentIdx ? "current" : ""}">
+        <div class="step-dot">${step.completed ? "✓" : step.step}</div>
+        <span class="step-label">${step.label.split(" ").slice(0, 2).join(" ")}</span>
+      </div>
+    `).join("");
+
+    /* Fill bar */
+    const pct = currentIdx >= 0 ? (currentIdx / (STATUS_ORDER.length - 1)) * 80 : 0;
+    const fill = document.getElementById("progress-fill");
+    fill.style.width = `${pct}%`;
+
+    /* Items */
+    document.getElementById("items-list").innerHTML = data.items.map(item =>
+      `<span style="background:var(--sage);color:var(--deep-green);padding:0.3rem 0.85rem;border-radius:999px;font-size:0.82rem;font-weight:600;text-transform:capitalize;">${item}</span>`
+    ).join("");
+  }
+
+  function show(id) { document.getElementById(id).style.display = ""; }
+  function hide(id) { document.getElementById(id).style.display = "none"; }
+</script>
+
+</body>
+</html>
