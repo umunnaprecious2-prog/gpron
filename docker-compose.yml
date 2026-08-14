@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gpron
+      POSTGRES_PASSWORD: gpron
+      POSTGRES_DB: gpron
+    ports:
+      # Host port 5433, not 5432: this machine already has a native
+      # Postgres service bound to 5432. Containers still reach this one at
+      # postgres:5432 over the compose network regardless of the host mapping.
+      - "5433:5432"
+    volumes:
+      - gpron_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gpron -d gpron"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Overrides .env's DATABASE_URL so the container talks to the
+      # 'postgres' service above instead of Neon during local dev.
+      DATABASE_URL: postgresql+asyncpg://gpron:gpron@postgres:5432/gpron
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./app:/srv/app/app
+      - ./migrations:/srv/app/migrations
+      - ./alembic.ini:/srv/app/alembic.ini
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+
+  frontend:
+    image: node:20-alpine
+    restart: unless-stopped
+    working_dir: /srv/frontend
+    environment:
+      VITE_PROXY_TARGET: http://backend:8000
+    volumes:
+      - ./frontend:/srv/frontend
+    ports:
+      - "5174:5174"
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - backend
+
+volumes:
+  gpron_postgres_data:

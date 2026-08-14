@@ -1,0 +1,44 @@
+# Render Blueprint. Spot-check against https://render.com/docs/blueprint-spec
+# before the first deploy. Some keys (env vs runtime, fromService property
+# names) have changed across Render's docs versions and I can't verify
+# against a live account from here.
+services:
+  - type: web
+    name: gpron-backend
+    env: python
+    plan: free
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    preDeployCommand: alembic upgrade head
+    envVars:
+      - key: DATABASE_URL
+        sync: false # set to your real Neon connection string in the Render dashboard
+      - key: SECRET_KEY
+        sync: false
+      - key: MANAGER_CODE
+        sync: false
+      - key: EMAIL_SERVICE_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false # set to the gpron-frontend service's URL once it's deployed
+
+  - type: web
+    name: gpron-frontend
+    env: static
+    plan: free
+    region: oregon
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false # set to the gpron-backend service's URL once it's deployed
