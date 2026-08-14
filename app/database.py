@@ -1,5 +1,6 @@
 import sys
 from typing import AsyncGenerator
+from urllib.parse import urlsplit
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -17,15 +18,24 @@ class Base(DeclarativeBase):
     pass
 
 
+# Hosts that run without TLS: local installs and the docker-compose
+# 'postgres' service (reachable as 'postgres' from other containers, or
+# 'localhost'/'127.0.0.1' from the host machine). Anything else is assumed
+# to be a hosted provider (Neon, CockroachDB, Supabase, RDS, ...) that
+# requires SSL, so this generalizes across providers instead of
+# special-casing one host.
+_LOCAL_HOSTS = {"localhost", "127.0.0.1", "postgres"}
+
+
 def connect_args() -> dict:
-    # Neon (and most hosted Postgres) requires SSL. asyncpg wants ssl=True/
-    # "require" passed as a connect kwarg, not the libpq-style "sslmode"
-    # query param, so we set it explicitly here instead of relying on the
-    # connection string. Skip it for local/Docker Postgres, which has no TLS.
-    # Reused by migrations/env.py so Alembic connects the same way.
-    if "neon.tech" in settings.database_url:
-        return {"ssl": "require"}
-    return {}
+    # asyncpg wants ssl=True/"require" passed as a connect kwarg, not the
+    # libpq-style "sslmode" query param, so we set it explicitly here
+    # instead of relying on the connection string. Reused by
+    # migrations/env.py so Alembic connects the same way.
+    host = urlsplit(settings.database_url).hostname or ""
+    if host in _LOCAL_HOSTS:
+        return {}
+    return {"ssl": "require"}
 
 
 # Under pytest, each test function can get its own asyncio event loop

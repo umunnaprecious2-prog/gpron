@@ -7,13 +7,23 @@ version: 2.0.0
 ---
 
 current state:
-🔧 ARCHITECTURE MIGRATION IN PROGRESS (Mongo → Postgres/Neon, layered restructure, Docker, Render)
+🔧 ARCHITECTURE MIGRATION IN PROGRESS (Mongo → Postgres, layered restructure, Docker, Render)
 - Backend rewritten from MongoDB/Motor to Postgres via SQLAlchemy 2.0 (async) + asyncpg + Alembic
 - `app/` restructured into a layered pattern: routes/ services/ middlewares/ utils/ validators/
   types/ exceptions/ scripts/ models/ (see architecture section below)
 - Dockerized local dev: `docker-compose.yml` runs postgres + backend + frontend together
-- Render deployment blueprint added (`render.yaml`): backend web service + frontend static site
-- Not yet verified end-to-end against a real Neon database (needs your real DATABASE_URL)
+- Render deployment blueprint added (`render.yaml`): backend web service + frontend static site.
+  Fixed twice against real Render validation errors: preDeployCommand isn't supported on the free
+  plan (migrations now run as part of startCommand instead), and static sites don't accept a
+  plan or region field.
+- Hosted Postgres provider: originally targeting Neon, but Neon's domain was unreachable from the
+  user's network across multiple connections/carriers (confirmed not a local issue via Neon's own
+  status page showing all-systems-operational). Switching to CockroachDB Serverless instead --
+  also genuinely free, Postgres wire-compatible, and doesn't pause on inactivity (Neon suspends
+  compute after idle, CockroachDB Serverless is usage-metered instead). app/database.py's SSL
+  detection is now host-based/provider-agnostic rather than hardcoded to neon.tech, so this isn't
+  a one-way door if the provider changes again.
+- Not yet verified end-to-end against a real hosted database (needs a working DATABASE_URL)
 - No existing MongoDB data was migrated. Fresh schema, dummy/test accounts only (by design,
   confirmed with user)
 
@@ -61,7 +71,8 @@ completed tasks:
 - ✅ `tests/conftest.py` creates tables before the test session runs
 - ✅ `frontend/src/api.js` BASE reads `VITE_API_URL` for cross-origin Render deployment
 - ✅ `render.yaml` Blueprint for backend (web service) + frontend (static site)
-- ✅ `.env.example` and `.env` updated to Postgres/Neon connection string format
+- ✅ `.env.example` and `.env` updated to a generic Postgres connection string format
+- ✅ `app/database.py` SSL detection generalized to any non-local host, not hardcoded to Neon
 
 ---
 
@@ -72,9 +83,11 @@ known pre-existing issue (not caused by this migration):
 ---
 
 tasks in progress:
-- End-to-end verification against a real Neon database (needs user's real DATABASE_URL)
-- Security review of the migrated codebase
-- Initial git push to https://github.com/umunnaprecious2-prog/gpron.git (incremental commits)
+- Setting up CockroachDB Serverless (free tier, chosen after Neon proved unreachable from user's
+  network) and getting a working DATABASE_URL
+- End-to-end verification against that real hosted database
+- Render Blueprint deploy (render.yaml validated after two rounds of fixes; still needs a real
+  DATABASE_URL before the backend service will actually start)
 
 ---
 
@@ -87,7 +100,7 @@ verified test accounts (pre-migration, MongoDB; need to be recreated via seed sc
 environment details:
 - Backend: FastAPI + uvicorn (--reload) on port 8000
 - Frontend: Vite on port 5174 (hot reload)
-- Database: Postgres (local Docker for dev, Neon for hosted/production)
+- Database: Postgres (local Docker for dev, CockroachDB Serverless for hosted/production)
 - ORM/migrations: SQLAlchemy 2.0 async + asyncpg + Alembic
 - Authentication: JWT (python-jose) + bcrypt (passlib)
 - Linting: ruff | Formatting: black | Testing: pytest + pytest-asyncio
@@ -116,11 +129,14 @@ next steps:
    (or `pytest` locally, against a running Postgres)
 
 5. Deploy:
-   - Create a Neon project, grab the connection string, put it in Render's gpron-backend
-     DATABASE_URL env var (not committed anywhere)
-   - Push this repo to GitHub, connect it as a Render Blueprint (render.yaml)
-   - Set ALLOWED_ORIGINS (backend) and VITE_API_URL (frontend) once both services have URLs
-   - Confirm `alembic upgrade head` (preDeployCommand) applies cleanly against Neon
+   - Create a CockroachDB Serverless cluster, grab the connection string, adjust it to
+     `postgresql+asyncpg://...` (drop `sslmode`, SSL is handled in code), put it in Render's
+     gpron-backend DATABASE_URL env var (not committed anywhere)
+   - Connect this repo to Render as a Blueprint (render.yaml)
+   - Set ALLOWED_ORIGINS (backend) and VITE_API_URL (frontend) once both services have URLs,
+     redeploy the frontend after (Vite bakes env vars in at build time)
+   - Confirm `alembic upgrade head` (now part of startCommand, see architecture section) applies
+     cleanly on first boot
 
 6. (Optional v2) Add email notifications, analytics, refined UI polish
 7. (Optional v3) Delivery personnel role, mobile version

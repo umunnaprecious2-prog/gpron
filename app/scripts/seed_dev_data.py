@@ -1,5 +1,5 @@
 """Create the two verified dev/test accounts against whichever DATABASE_URL
-is active (local Docker Postgres or Neon).
+is active (local Docker Postgres or a hosted provider).
 
 Run with:
     python -m app.scripts.seed_dev_data

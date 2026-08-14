@@ -15,7 +15,7 @@ services:
     startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
-        sync: false # set to your real Neon connection string in the Render dashboard
+        sync: false # set to your real Postgres connection string in the Render dashboard
       - key: SECRET_KEY
         sync: false
       - key: MANAGER_CODE

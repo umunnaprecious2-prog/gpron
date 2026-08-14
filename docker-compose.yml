@@ -26,7 +26,7 @@ services:
       - .env
     environment:
       # Overrides .env's DATABASE_URL so the container talks to the
-      # 'postgres' service above instead of Neon during local dev.
+      # 'postgres' service above instead of a hosted provider during local dev.
       DATABASE_URL: postgresql+asyncpg://gpron:gpron@postgres:5432/gpron
     ports:
       - "8000:8000"
