@@ -2,7 +2,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env")
+    # Strips leading/trailing whitespace from every string field. Env var
+    # dashboards (Render and others) commonly pick up a trailing newline
+    # when a value is pasted in, which otherwise turns e.g. DATABASE_URL's
+    # database name into "defaultdb\n" -- a real name that doesn't exist.
+    model_config = SettingsConfigDict(env_file=".env", str_strip_whitespace=True)
 
     database_url: str
     secret_key: str
