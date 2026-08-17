@@ -10,3 +10,8 @@ node_modules/
 frontend/dist/
 *.log
 .DS_Store
+
+# Personal documents that ended up in this folder -- not project files,
+# and this repo pushes to a public GitHub remote.
+*.docx
+UMUNNA PRECIOUS CV*.pdf
