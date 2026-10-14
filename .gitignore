@@ -15,3 +15,6 @@ frontend/dist/
 # and this repo pushes to a public GitHub remote.
 *.docx
 UMUNNA PRECIOUS CV*.pdf
+
+# Optional monitoring: Prometheus scrape token (same value as METRICS_TOKEN)
+monitoring/metrics_token

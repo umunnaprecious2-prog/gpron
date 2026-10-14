@@ -1,10 +1,83 @@
 read.md
 
 project: Gpron Integrated Service Platform
-date: 2026-08-14
-version: 2.0.0
+date: 2026-10-14
+version: 2.1.0
 
 ---
+
+latest change (2026-10-14): AI customer support agent ("Ada"), text + voice chat widget
+STATUS: built and verified LOCALLY (83 automated tests pass; live OpenAI chat, TTS and STT
+round trips verified through the real stack; desktop + mobile browser QA). NOT committed and
+NOT deployed yet. Production needs migration 0002 (runs automatically on Render start).
+
+how it works (short):
+- Widget: frontend/src/support/launcher.js (~1.3 KB gz, on index/track/login/register/dashboard)
+  lazy-loads widget.js + widget.css on first open. Polls for replies only while one is pending.
+- Server-side batching (app/services/support_batching_service.py): each customer message sets
+  conversations.due_at = min(last msg + 3s, batch start + 10s). An in-process worker
+  (support_worker.py) sleeps until the next due_at (woken instantly by new messages, 15s idle
+  safety net), claims the batch with a compare-and-set DB lease, waits for any voice note still
+  transcribing (up to 30s), calls the AI once, and delivers only if customer_seq is unchanged.
+  Newer message during generation -> reply dropped as stale and regenerated (max 2 times, then
+  delivered). Unique (conversation_id, reply_to_seq) makes a duplicate reply impossible.
+  No queue/Redis: all state is in Postgres, so restarts lose nothing.
+- AI (ai_response_service.py): OpenAI Chat Completions via httpx, model OPENAI_CHAT_MODEL
+  (gpt-4.1-mini). Read-only server-side tools: get_quote (catalog_service), lookup_order (same
+  fields as public /track, no PII), list_my_orders (only for chats started while signed in).
+  Facts come from business_info_service.py + catalog_service.py. Missing/invalid key -> chat
+  replies with a clear "talk to a person" fallback.
+- Voice (speech_service.py): ElevenLabs if ELEVENLABS_API_KEY is set, else OpenAI speech
+  (gpt-4o-mini-transcribe / gpt-4o-mini-tts) with the existing OPENAI_API_KEY. Audio is
+  magic-byte checked, held in memory only, never stored. One retry on stalled connections.
+- Escalation: "Talk to a person" saves support_requests (+ last 6 customer messages, trimmed).
+  Managers see/resolve them in manager.html > Support Requests. NO email/staff notification is
+  sent (no email integration exists); the customer is told it was recorded, not notified.
+- Pricing: app/services/catalog_service.py is now the single source of truth. dashboard.html
+  loads it from GET /catalog; landing pricing cards were corrected to match.
+
+api endpoints added:
+GET    /catalog                                              public price list
+GET    /support/config                                        widget capabilities
+POST   /support/conversations                                 -> {conversation_id, token}
+GET    /support/conversations/{id}/messages?after_seq=N       X-Support-Token
+POST   /support/conversations/{id}/messages                   {client_msg_id, text} -> 202
+POST   /support/conversations/{id}/voice                      multipart file + client_msg_id
+GET    /support/conversations/{id}/messages/{msg_id}/audio    reply as mp3 (TTS)
+POST   /support/conversations/{id}/escalate                   support request
+GET    /support/requests?status=open                          manager only
+PATCH  /support/requests/{id}                                 manager only {status}
+GET    /metrics                                               only if METRICS_TOKEN set (bearer)
+
+database: migration 0002 adds support_conversations, support_messages, support_requests.
+  alembic upgrade head        (Render runs this on every start already)
+
+env vars added (all optional; see .env.example): OPENAI_CHAT_MODEL, SUPPORT_* batching/retention,
+  SPEECH_PROVIDER, ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID, VOICE_MAX_SECONDS, METRICS_TOKEN.
+  render.yaml now starts uvicorn with --proxy-headers so per-IP rate limits see real client IPs.
+
+testing (never against .env's DB; conftest refuses non-local hosts):
+  docker run -d --name gpron-test-pg -e POSTGRES_USER=gpron -e POSTGRES_PASSWORD=gpron
+    -e POSTGRES_DB=gpron_test -p 127.0.0.1:55432:5432 postgres:16-alpine
+  DATABASE_URL=postgresql+asyncpg://gpron:gpron@127.0.0.1:55432/gpron_test MANAGER_CODE=0000 pytest
+  Result 2026-10-14: 83 passed (incl. the 7 pre-existing tests; 2 of those were failing before
+  this work because conftest's create_all never created order_tracking_seq, now fixed).
+
+monitoring (optional): /metrics + docker-compose.monitoring.yml (Prometheus :9091, Grafana :3001,
+  dashboard provisioned from monitoring/grafana/dashboards/gpron-support.json).
+
+known issues / limits:
+- .env has keys with spaces ("SQL USERNAME", "SQL PASSWORD", lines ~18-20): docker compose cannot
+  parse it, so `docker compose up` fails until they are renamed (SQL_USERNAME) or removed.
+- On this machine host ports 5433 and 8000 are taken by other projects; compose's 5433 mapping
+  will clash. Local runs used 55432 (test DB) and 8010 (backend).
+- Rate limits are in-memory per instance (fine for the single Render instance).
+- Business facts (hours, contact, FAQ) are mirrored from index.html in business_info_service.py;
+  edit both together.
+- Pre-existing, not changed: POST /orders trusts client-sent unit_price (price tampering
+  possible). Now easy to fix by pricing server-side from catalog_service.
+- Tracking IDs are sequential/guessable; the agent exposes no more than public /track does.
+- Render free tier sleeps after 15 min idle; first chat message after that waits for cold start.
 
 current state:
 ✅ LIVE IN PRODUCTION (Postgres/CockroachDB migration + layered restructure + Render deploy, fully
@@ -151,8 +224,8 @@ POST   /newsletter/subscribe (public)
 
 ---
 
-pricing logic (unchanged):
-Normal:  ₦500 base + ₦150 per item
-Express: ₦900 base + ₦250 per item
+pricing logic (source of truth: app/services/catalog_service.py, GET /catalog):
+Normal:  ₦500 base + per-item catalog price (₦60 to ₦500)
+Express: ₦900 base + per-item catalog price x 1.6
 
 tracking ID format: GPRON-{YEAR}-{NNNN}

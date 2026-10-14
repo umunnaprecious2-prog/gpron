@@ -1,0 +1,49 @@
+/* Support chat launcher: the only support CSS loaded with every page. */
+.gp-chat-launcher {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  z-index: 1000;
+  width: 58px;
+  height: 58px;
+  border: none;
+  border-radius: 50%;
+  background: var(--gradient, linear-gradient(135deg, #0B3D2E 0%, #1F8A70 100%));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(11, 61, 46, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.gp-chat-launcher:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(11, 61, 46, 0.4); }
+.gp-chat-launcher:focus-visible { outline: 3px solid #A8E6CF; outline-offset: 3px; }
+.gp-chat-launcher svg { width: 26px; height: 26px; }
+.gp-chat-launcher[hidden] { display: none; }
+.gp-chat-launcher .gp-unread {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #F2B84B;
+  border: 2px solid #fff;
+}
+.gp-chat-launcher .gp-unread[hidden] { display: none; }
+
+/* Pages with the "Place Order" floating CTA: sit it beside the launcher
+   instead of underneath it. */
+body.gp-has-chat .float-cta { right: calc(1.5rem + 58px + 0.75rem); bottom: 1.5rem; }
+
+@media (max-width: 640px) {
+  .gp-chat-launcher { right: 1rem; bottom: 1rem; width: 54px; height: 54px; }
+  body.gp-has-chat .float-cta { right: calc(1rem + 54px + 0.6rem); bottom: 1rem; }
+  body.gp-has-chat .float-cta a { padding: 0.8rem 1.1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gp-chat-launcher { transition: none; }
+  .gp-chat-launcher:hover { transform: none; }
+}

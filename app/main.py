@@ -1,17 +1,34 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+import logging
 from contextlib import asynccontextmanager
 
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 from app.config import settings
-from app.database import connect_db, close_db
+from app.database import SessionLocal, close_db, connect_db
 from app.exceptions.handlers import register_exception_handlers
-from app.routes import auth, orders, tracking, newsletter
+from app.middlewares.body_size_middleware import BodySizeLimitMiddleware
+from app.routes import auth, catalog, metrics, newsletter, orders, support, tracking
+from app.services.support_worker import build_support_runtime
+
+# App loggers at INFO (uvicorn only configures its own). Log lines are
+# key=value and never include message text, tokens or contact details.
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s"
+)
+logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await connect_db()
+    runtime = build_support_runtime(settings, SessionLocal)
+    app.state.support = runtime
+    if runtime.worker:
+        await runtime.worker.start()
     yield
+    if runtime.worker:
+        await runtime.worker.stop()
     await close_db()
 
 
@@ -31,6 +48,7 @@ allowed_origins = (
     ]
 )
 
+app.add_middleware(BodySizeLimitMiddleware, voice_limit=settings.voice_max_upload_bytes)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
@@ -49,6 +67,9 @@ app.include_router(auth.router)
 app.include_router(orders.router)
 app.include_router(tracking.router)
 app.include_router(newsletter.router)
+app.include_router(catalog.router)
+app.include_router(support.router)
+app.include_router(metrics.router)
 
 
 @app.get("/")

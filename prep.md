@@ -132,6 +132,13 @@ delivery completion alerts
 user email subscription
 email storage and management
 
+4.7 customer support agent module
+public chat widget (text and voice notes) with an AI assistant named Ada
+server-side batching of quick successive messages into one reply
+answers grounded in the service catalog, business info and public order tracking
+human escalation recorded as support requests for managers
+catalog service is the single source of truth for prices (GET /catalog)
+
 5. database design
 
 users:
@@ -181,6 +188,20 @@ GET /track/{tracking_id}
 newsletter:
 POST /subscribe
 
+catalog:
+GET /catalog
+
+support agent:
+GET /support/config
+POST /support/conversations
+GET /support/conversations/{id}/messages
+POST /support/conversations/{id}/messages
+POST /support/conversations/{id}/voice
+GET /support/conversations/{id}/messages/{message_id}/audio
+POST /support/conversations/{id}/escalate
+GET /support/requests (manager)
+PATCH /support/requests/{id} (manager)
+
 7. frontend structure
 
 customer interface:
@@ -209,6 +230,9 @@ environment variables stored in .env:
 DATABASE_URL
 SECRET_KEY
 EMAIL_SERVICE_KEY
+OPENAI_API_KEY (support agent replies; also voice if no ElevenLabs key)
+ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID (optional voice provider)
+METRICS_TOKEN (optional, enables /metrics)
 
 rules:
 no hardcoded credentials

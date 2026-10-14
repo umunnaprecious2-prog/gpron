@@ -2,7 +2,7 @@
 // API calls to the backend. On Render, frontend and backend are separate
 // services on different origins, so the build sets VITE_API_URL to the
 // backend service's URL.
-const BASE = import.meta.env.VITE_API_URL || "";
+export const BASE = import.meta.env.VITE_API_URL || "";
 
 function getToken() {
   return localStorage.getItem("gpron_token");
@@ -35,6 +35,9 @@ export const api = {
   updateStatus:  (tracking_id, status)   => request("PATCH", "/orders/status",    { tracking_id, status }),
   track:         (tracking_id)           => request("GET",   `/track/${tracking_id}`),
   subscribe:     (email)                 => request("POST",  "/newsletter/subscribe", { email }),
+  catalog:       ()                      => request("GET",   "/catalog"),
+  supportRequests:     (status)          => request("GET",   status ? `/support/requests?status=${status}` : "/support/requests"),
+  updateSupportRequest:(id, status)      => request("PATCH", `/support/requests/${id}`, { status }),
 };
 
 /* ── Auth helpers ── */
@@ -50,6 +53,9 @@ export function getUser() {
 export function logout() {
   localStorage.removeItem("gpron_token");
   localStorage.removeItem("gpron_user");
+  // Support chats started while signed in can list this customer's orders;
+  // don't leave one behind for the next person on a shared device.
+  localStorage.removeItem("gpron_support_session");
   window.location.href = "/login.html";
 }
 

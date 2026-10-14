@@ -181,6 +181,10 @@
     <div class="sidebar-section">
       <button class="nav-item" onclick="showView('update',this)"><span class="ni-icon">✏️</span> Update Status</button>
     </div>
+    <div class="sidebar-label">Customers</div>
+    <div class="sidebar-section">
+      <button class="nav-item" onclick="showView('support',this)"><span class="ni-icon">💬</span> Support Requests <span class="nav-badge" id="nb-support">—</span></button>
+    </div>
   </aside>
 
   <!-- Main area -->
@@ -306,6 +310,22 @@
       </div>
     </div>
 
+    <!-- ── SUPPORT REQUESTS (from the AI chat's "Talk to a person") ── -->
+    <div class="view" id="view-support">
+      <div class="orders-table-wrap">
+        <div class="otable-header">
+          <h3>Support Requests</h3>
+          <select id="support-filter" onchange="loadSupport()" style="padding:0.45rem 0.7rem;border:1.5px solid var(--border);border-radius:9px;font-size:0.85rem;">
+            <option value="open">Open</option>
+            <option value="in_progress">In progress</option>
+            <option value="resolved">Resolved</option>
+            <option value="">All</option>
+          </select>
+        </div>
+        <div id="support-list" style="padding:1rem 1.25rem;display:flex;flex-direction:column;gap:0.85rem;"></div>
+      </div>
+    </div>
+
     <!-- ── ACTIVITY FEED ── -->
     <div class="view" id="view-activity">
       <div style="max-width:640px;">
@@ -391,6 +411,7 @@ window.showView = function(name, btn) {
     delivered: ["Delivered Orders",      "Completed and delivered orders"],
     update:    ["Update Order Status",   "Advance orders through the lifecycle"],
     activity:  ["Activity Feed",         "Recent actions and status changes"],
+    support:   ["Support Requests",      "Customers who asked the chat assistant for a person"],
   };
   const [title, sub] = titles[name] || ["—", ""];
   document.getElementById("page-title").textContent = title;
@@ -402,7 +423,87 @@ window.showView = function(name, btn) {
   if (name === "orders")    applyFilter();
   if (name === "update")    renderQuickActions();
   if (name === "activity")  renderActivity();
+  if (name === "support")   loadSupport();
 };
+
+/* ── Support requests ── */
+const SUPPORT_CATEGORIES = {
+  general: "General", order_issue: "Order issue", complaint: "Complaint",
+  pricing: "Pricing", pickup_delivery: "Pickup / delivery", payment: "Payment",
+};
+
+function node(tag, style, text) {
+  const n = document.createElement(tag);
+  if (style) n.style.cssText = style;
+  if (text !== undefined) n.textContent = text;
+  return n;
+}
+
+function supportCard(req) {
+  const card = node("div", "border:1px solid var(--border);border-radius:12px;padding:1rem 1.1rem;background:#fff;");
+  const head = node("div", "display:flex;justify-content:space-between;gap:0.75rem;flex-wrap:wrap;align-items:center;margin-bottom:0.5rem;");
+  const title = node("div", "font-weight:700;color:var(--dark-emerald);");
+  title.append(node("span", "font-family:monospace;margin-right:0.5rem;", req.reference), SUPPORT_CATEGORIES[req.category] || req.category);
+  const when = node("span", "font-size:0.75rem;color:var(--text-muted);",
+    new Date(req.created_at + "Z").toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short" }));
+  head.append(title, when);
+
+  const contact = [req.contact_name, req.contact_phone, req.contact_email].filter(Boolean).join(" · ");
+  card.append(
+    head,
+    node("div", "font-size:0.82rem;color:var(--text-sec);margin-bottom:0.5rem;",
+      contact + (req.signed_in_customer ? " (signed-in customer)" : "")),
+    node("p", "font-size:0.9rem;white-space:pre-wrap;margin:0 0 0.6rem;", req.message),
+  );
+
+  if (req.excerpt?.length) {
+    const details = node("details", "font-size:0.8rem;color:var(--text-sec);margin-bottom:0.6rem;");
+    details.append(node("summary", "cursor:pointer;", `Recent chat messages (${req.excerpt.length})`));
+    req.excerpt.forEach(m => details.append(
+      node("div", "padding:0.3rem 0 0.3rem 0.6rem;border-left:2px solid var(--mint);margin-top:0.35rem;",
+        (m.kind === "voice" ? "🎤 " : "") + m.text)));
+    card.append(details);
+  }
+
+  const actions = node("div", "display:flex;gap:0.5rem;align-items:center;");
+  const select = node("select", "padding:0.4rem 0.6rem;border:1.5px solid var(--border);border-radius:8px;font-size:0.8rem;");
+  [["open", "Open"], ["in_progress", "In progress"], ["resolved", "Resolved"]].forEach(([v, label]) => {
+    const opt = node("option", "", label); opt.value = v; opt.selected = v === req.status; select.append(opt);
+  });
+  const msg = node("span", "font-size:0.75rem;color:var(--text-muted);");
+  select.addEventListener("change", async () => {
+    try {
+      await api.updateSupportRequest(req.id, select.value);
+      msg.textContent = "Saved";
+      refreshSupportCount();
+    } catch (e) {
+      msg.textContent = e.message;
+      select.value = req.status;
+    }
+  });
+  actions.append(node("span", "font-size:0.8rem;color:var(--text-sec);", "Status"), select, msg);
+  card.append(actions);
+  return card;
+}
+
+window.loadSupport = async function() {
+  const list = document.getElementById("support-list");
+  const status = document.getElementById("support-filter").value;
+  try {
+    const requests = await api.supportRequests(status);
+    list.replaceChildren(...(requests.length
+      ? requests.map(supportCard)
+      : [node("div", "text-align:center;padding:2rem;color:var(--text-muted);", "No support requests here.")]));
+  } catch (e) {
+    list.replaceChildren(node("div", "color:#b42318;", "Couldn't load support requests: " + e.message));
+  }
+};
+
+async function refreshSupportCount() {
+  try {
+    document.getElementById("nb-support").textContent = (await api.supportRequests("open")).length;
+  } catch { /* badge stays as-is */ }
+}
 
 /* ── Stats ── */
 function renderStats(orders) {
@@ -726,6 +827,8 @@ window.refreshAll = async function() {
     if (active?.id === "view-active")    renderTable("active-table-body",    allOrders.filter(o => ["picked_up","in_cleaning","ready"].includes(o.status)));
     if (active?.id === "view-delivered") renderTable("delivered-table-body", allOrders.filter(o => o.status === "delivered"));
     if (active?.id === "view-orders")    applyFilter();
+    if (active?.id === "view-support")   loadSupport();
+    refreshSupportCount();
     document.getElementById("last-refresh").textContent =
       "Updated " + new Date().toLocaleTimeString("en-NG", {hour:"2-digit",minute:"2-digit"});
   } catch (e) {

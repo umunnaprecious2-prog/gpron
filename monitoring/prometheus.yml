@@ -1,0 +1,16 @@
+# Optional. Scrapes the Gpron backend's /metrics endpoint.
+# The backend only serves /metrics when METRICS_TOKEN is set; Prometheus
+# reads the same token from a mounted file (see docker-compose.monitoring.yml).
+global:
+  scrape_interval: 30s
+
+scrape_configs:
+  - job_name: gpron-backend
+    metrics_path: /metrics
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/metrics_token
+    static_configs:
+      # host.docker.internal reaches a backend running on the host machine.
+      # For the compose dev stack, use backend:8000 instead.
+      - targets: ["host.docker.internal:8000"]

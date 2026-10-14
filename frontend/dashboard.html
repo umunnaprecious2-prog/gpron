@@ -293,29 +293,11 @@ document.getElementById("welcome-msg").textContent = `Welcome back, ${user.name.
 window.doLogout = logout;
 
 /* ── Catalog data ── */
-const CATALOG = [
-  { id: "shirt",       name: "Shirt / Top",      emoji: "👔", price: 150, cat: "Tops" },
-  { id: "trouser",     name: "Trouser / Jeans",  emoji: "👖", price: 150, cat: "Bottoms" },
-  { id: "dress",       name: "Dress",             emoji: "👗", price: 150, cat: "Tops" },
-  { id: "suit_jacket", name: "Suit Jacket",       emoji: "🧥", price: 200, cat: "Formal" },
-  { id: "suit_trouser",name: "Suit Trouser",      emoji: "👔", price: 200, cat: "Formal" },
-  { id: "coat",        name: "Coat / Jacket",     emoji: "🧥", price: 250, cat: "Outerwear" },
-  { id: "traditional", name: "Traditional Wear",  emoji: "🥻", price: 200, cat: "Traditional" },
-  { id: "ankara",      name: "Ankara / Aso-Oke",  emoji: "🧣", price: 250, cat: "Traditional" },
-  { id: "wedding",     name: "Wedding Dress",      emoji: "👰", price: 500, cat: "Specialty" },
-  { id: "kids",        name: "Kids Wear",          emoji: "👶", price: 100, cat: "Kids" },
-  { id: "underwear",   name: "Underwear / Socks",  emoji: "🧦", price: 60,  cat: "Basics" },
-  { id: "sweater",     name: "Sweater / Hoodie",   emoji: "🧶", price: 180, cat: "Outerwear" },
-  { id: "uniform",     name: "Uniform (set)",      emoji: "👕", price: 180, cat: "Formal" },
-  { id: "bedsheet",    name: "Bedsheet",           emoji: "🛏️", price: 200, cat: "Bedding" },
-  { id: "duvet",       name: "Duvet / Comforter",  emoji: "🛋️", price: 400, cat: "Bedding" },
-  { id: "pillowcase",  name: "Pillowcase",         emoji: "🪫", price: 80,  cat: "Bedding" },
-  { id: "curtain",     name: "Curtain (per panel)",emoji: "🪟", price: 300, cat: "Home" },
-];
-
-const CATEGORIES = ["All", ...new Set(CATALOG.map(i => i.cat))];
-const EXPRESS_MULT = 1.6;
-const BASE_FEE = { normal: 500, express: 900 };
+// Prices come from the backend (GET /catalog), the same source the support
+// assistant quotes from, so the two can never disagree.
+let CATALOG = [];
+let EXPRESS_MULT = 1;
+let BASE_FEE = { normal: 0, express: 0 };
 
 let serviceType = "normal";
 let cart = {};      // { id: quantity }
@@ -335,7 +317,10 @@ window.setService = function(type) {
 /* ── Category pills ── */
 let activecat = "All";
 const pillsEl = document.getElementById("cat-pills");
-CATEGORIES.forEach(cat => {
+function renderPills() {
+  const categories = ["All", ...new Set(CATALOG.map(i => i.cat))];
+  pillsEl.innerHTML = "";
+  categories.forEach(cat => {
   const btn = document.createElement("button");
   btn.className = "cat-pill" + (cat === "All" ? " active" : "");
   btn.textContent = cat;
@@ -345,7 +330,8 @@ CATEGORIES.forEach(cat => {
     renderCatalog();
   };
   pillsEl.appendChild(btn);
-});
+  });
+}
 
 /* ── Render catalog ── */
 function renderCatalog() {
@@ -554,10 +540,27 @@ async function loadOrders() {
 }
 
 /* ── Init ── */
-renderCatalog();
-renderCart();
+async function loadCatalog() {
+  try {
+    const data = await api.catalog();
+    CATALOG = data.items.map(i => ({ ...i, cat: i.category }));
+    EXPRESS_MULT = data.express_multiplier;
+    BASE_FEE = data.base_fee;
+  } catch (e) {
+    document.getElementById("catalog-grid").innerHTML =
+      `<p style="font-size:0.85rem;color:var(--text-muted);">Couldn't load prices right now. Please refresh the page.</p>`;
+    return;
+  }
+  renderPills();
+  renderCatalog();
+  renderCart();
+}
+
+loadCatalog();
 loadOrders();
 </script>
 
+<!-- AI customer support chat (panel loads on first open) -->
+<script type="module" src="/src/support/launcher.js"></script>
 </body>
 </html>

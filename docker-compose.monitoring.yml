@@ -1,0 +1,41 @@
+# OPTIONAL local monitoring for the support agent. Gpron never depends on
+# this; skip it entirely on small machines or on Render's free tier.
+#
+#   1. Set METRICS_TOKEN in .env (any long random string) and restart the backend.
+#   2. Put the same value in monitoring/metrics_token (gitignored, no newline needed).
+#   3. docker compose -f docker-compose.monitoring.yml up -d
+#   4. Grafana: http://localhost:3001 (admin / admin on first login)
+#      Prometheus: http://localhost:9091
+#
+# Rough footprint: ~150-250 MB RAM for both containers.
+services:
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/metrics_token:/etc/prometheus/metrics_token:ro
+      - prometheus_data:/prometheus
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "9091:9090"
+
+  grafana:
+    image: grafana/grafana-oss:11.1.0
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+
+volumes:
+  prometheus_data:
+  grafana_data:

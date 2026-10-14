@@ -27,3 +27,23 @@ class ForbiddenError(AppError):
 
 class ConflictError(AppError):
     status_code = 400
+
+
+class ValidationFailedError(AppError):
+    status_code = 422
+
+
+class PayloadTooLargeError(AppError):
+    status_code = 413
+
+
+class UnsupportedMediaError(AppError):
+    status_code = 415
+
+
+class TooManyRequestsError(AppError):
+    status_code = 429
+
+
+class ServiceUnavailableError(AppError):
+    status_code = 503

@@ -31,6 +31,8 @@ google-auth>=2.27.0
 # dependency. Was masked locally by an already-installed transitive copy
 # from another package -- Render's clean environment caught the gap.
 requests>=2.31.0
+# /metrics endpoint for the support agent (Prometheus text format).
+prometheus-client>=0.20.0
 ruff==0.4.4
 black==24.4.2
 pytest==8.2.0

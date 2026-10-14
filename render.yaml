@@ -13,7 +13,10 @@ services:
     # preDeployCommand needs a paid plan; on the free tier, run migrations
     # as part of startup instead. alembic upgrade head is a no-op once
     # already at head, so this is safe to run on every restart/redeploy.
-    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    # --proxy-headers: Render terminates TLS at its proxy, so without this
+    # every request looks like it comes from the proxy's IP and the support
+    # chat's per-IP rate limits would lump all customers together.
+    startCommand: alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips='*'
     envVars:
       - key: DATABASE_URL
         sync: false # set to your real Postgres connection string in the Render dashboard
@@ -33,6 +36,19 @@ services:
         sync: false
       - key: ALLOWED_ORIGINS
         sync: false # set to the gpron-frontend service's URL once it's deployed
+      # --- AI support agent (all optional; chat falls back gracefully) ---
+      - key: OPENAI_CHAT_MODEL
+        value: gpt-4.1-mini
+      - key: ELEVENLABS_API_KEY
+        sync: false # optional: preferred voice provider; OpenAI is used if unset
+      - key: ELEVENLABS_VOICE_ID
+        sync: false # needed for ElevenLabs read-aloud (text-to-speech)
+      - key: METRICS_TOKEN
+        sync: false # optional: enables /metrics for Prometheus
+      # Same effect as --forwarded-allow-ips in startCommand (uvicorn reads
+      # this env var), so real client IPs reach the rate limiter either way.
+      - key: FORWARDED_ALLOW_IPS
+        value: "*"
 
   - type: web
     name: gpron-frontend

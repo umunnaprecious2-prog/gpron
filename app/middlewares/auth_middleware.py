@@ -13,6 +13,7 @@ from app.models.db import User
 from app.utils.security import decode_token
 
 bearer_scheme = HTTPBearer()
+optional_bearer_scheme = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
@@ -41,3 +42,20 @@ async def require_manager(current_user: User = Depends(get_current_user)) -> Use
     if current_user.role != "manager":
         raise ForbiddenError("Manager access required")
     return current_user
+
+
+async def get_optional_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(optional_bearer_scheme),
+    db: AsyncSession = Depends(get_db),
+) -> User | None:
+    """For public endpoints that behave better for signed-in users.
+
+    No token, or an expired/invalid one, means anonymous: an old session in
+    localStorage must not lock a customer out of public support chat.
+    """
+    if credentials is None:
+        return None
+    try:
+        return await get_current_user(credentials, db)
+    except UnauthorizedError:
+        return None

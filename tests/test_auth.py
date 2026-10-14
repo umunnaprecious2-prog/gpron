@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 from httpx import AsyncClient, ASGITransport
 from app.main import app
@@ -69,7 +71,8 @@ async def test_manager_registration_with_correct_code():
     ) as client:
         payload = {
             "name": "Test Manager",
-            "email": "testmgr_correctcode@example.com",
+            # Unique per run: a fixed email only passes against an empty database.
+            "email": f"testmgr_correctcode_{uuid.uuid4().hex[:8]}@example.com",
             "password": "securepass123",
             "role": "manager",
             "manager_code": "0000",

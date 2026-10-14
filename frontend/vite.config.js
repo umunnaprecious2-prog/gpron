@@ -12,6 +12,8 @@ export default {
       // Only proxy /track when it's an API call, not /track.html
       "/track/": proxyTarget,
       "/newsletter": proxyTarget,
+      "/catalog": proxyTarget,
+      "/support": proxyTarget,
     },
   },
   build: {

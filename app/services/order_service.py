@@ -8,15 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.exceptions.errors import NotFoundError
 from app.models.db import Log, Order, User
+from app.services.catalog_service import BASE_FEE
 from app.validators.order import OrderCreate, OrderStatusUpdate
-
-BASE_FEE = {
-    "normal": 500.0,
-    "express": 900.0,
-}
-
-# Per-item prices per service type (normal / express multiplier)
-EXPRESS_MULTIPLIER = 1.6
 
 
 async def generate_tracking_id(db: AsyncSession) -> str:
