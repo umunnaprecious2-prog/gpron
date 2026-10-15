@@ -38,8 +38,8 @@ async def verify_google_token(token: str) -> dict:
             "name": idinfo.get("name"),
             "picture": idinfo.get("picture"),
         }
-    except Exception as e:
+    except Exception:
         # Don't echo the raw exception to the client, it can leak internal
         # library/network detail. Log it server-side instead.
-        logger.warning("Google token verification failed: %s", e)
+        logger.warning("Google token verification failed")
         raise UnauthorizedError("Invalid Google token")
