@@ -38,15 +38,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-allowed_origins = (
-    ["*"]
-    if settings.allowed_origins.strip() == "*"
-    else [
-        origin.strip()
-        for origin in settings.allowed_origins.split(",")
-        if origin.strip()
-    ]
-)
+allowed_origins = [
+    origin.strip()
+    for origin in settings.allowed_origins.split(",")
+    if origin.strip() and origin.strip() != "*"
+]
 
 app.add_middleware(BodySizeLimitMiddleware, voice_limit=settings.voice_max_upload_bytes)
 app.add_middleware(
